@@ -1,49 +1,31 @@
-#include <Arduino.h>
 #include <WiFi.h>
-#include <WiFiMulti.h>
-#include <HTTPClient.h>
-
-
-WiFiMulti wifiMulti;
 
 void setup() {
 
-    Serial.begin(115200);
-    wifiMulti.addAP("dlink9321", "19311933af");
-   // wifiMulti.addAP("test", "test");
+  Serial.begin(115200);
+  WiFi.begin("dlink9321", "19311933af");
+
+  Serial.print("Connecting");  //  "Подключение"
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println();
+
+  //ESP WiFi info
+  uint8_t macAddr [ 6 ];
+  WiFi.macAddress (macAddr);
+  Serial.printf("Connected\nmac address: %02x:%02x:%02x:%02x:%02x:%02x \n" , macAddr [ 0 ], macAddr [ 1 ], macAddr [ 2 ], macAddr [ 3 ], macAddr [ 4 ], macAddr [ 5 ]);
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+  Serial.print("Subnet mask: ");
+  Serial.println ( WiFi.subnetMask ());
 }
 
 void loop() {
-    // wait for WiFi connection
-    if((wifiMulti.run() == WL_CONNECTED)) {
-
-        HTTPClient http;
-
-        USE_SERIAL.print("[HTTP] begin...\n");
-        // configure traged server and url
-        //http.begin("https://www.howsmyssl.com/a/check", ca); //HTTPS
-        http.begin("http://example.com/index.html"); //HTTP
-
-        USE_SERIAL.print("[HTTP] GET...\n");
-        // start connection and send HTTP header
-        int httpCode = http.GET();
-
-        // httpCode will be negative on error
-        if(httpCode > 0) {
-            // HTTP header has been send and Server response header has been handled
-            USE_SERIAL.printf("[HTTP] GET... code: %d\n", httpCode);
-
-            // file found at server
-            if(httpCode == HTTP_CODE_OK) {
-                String payload = http.getString();
-                USE_SERIAL.println(payload);
-            }
-        } else {
-            USE_SERIAL.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
-        }
-
-        http.end();
-    }
-
-    delay(5000);
+  // wait for WiFi connection
+  if ((WiFi.status() == WL_CONNECTED)) {
+    
+}
 }
