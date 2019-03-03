@@ -1,21 +1,29 @@
 #include <WiFi.h>
 #include <WebSocketsServer.h>
+#include <EEPROM.h>
 
 WebSocketsServer webSocket = WebSocketsServer(80);
 
 void setup() {
 
   Serial.begin(115200);
-  WiFi.begin("dlink9321", "19311933af");
 
+  EEPROM.begin(20);
+  WiFi.begin("dlink9321", "19311933af");
   Serial.print("Connecting");  //  "Подключение"
   while (WiFi.status() != WL_CONNECTED)
   {
     delay(500);
     Serial.print(".");
   }
-  Serial.println();
+  WifiInfo();
 
+  webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
+}
+
+void WifiInfo() {
+  Serial.println();
   //ESP WiFi info
   uint8_t macAddr [ 6 ];
   WiFi.macAddress (macAddr);
@@ -24,15 +32,12 @@ void setup() {
   Serial.println(WiFi.localIP());
   Serial.print("Subnet mask: ");
   Serial.println ( WiFi.subnetMask ());
-
-  webSocket.begin();
-  webSocket.onEvent(webSocketEvent);
 }
 
 void loop() {
   // wait for WiFi connection
   if ((WiFi.status() == WL_CONNECTED)) {
-
+    webSocket.loop();
   }
 }
 
@@ -57,4 +62,18 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       break;
   }
 
+}
+
+String JsonInitSend()
+{
+  StaticJsonDocument<200> Init;
+
+  Init["microcontroller"] = "feeder";
+  Init["doublePortion"] = 1;
+  Init["feedingInterval"] = 10;
+  Init["feedingCount"] = "gps";
+  Init["maxFeedingCount"] = 10;
+  Init["lastFeedingTime"] = 14;
+  Init["type"] = "pf";
+  serializeJsonPretty(Init, Serial);
 }
