@@ -1,8 +1,9 @@
 #include <WiFi.h>
 #include <WebSocketsServer.h>
 #include <EEPROM.h>
+#include <ArduinoJson.h>
 
-WebSocketsServer webSocket = WebSocketsServer(80);
+WebSocketsServer webSocket = WebSocketsServer(8080);
 
 void setup() {
 
@@ -35,23 +36,19 @@ void WifiInfo() {
 }
 
 void loop() {
-  // wait for WiFi connection
-  if ((WiFi.status() == WL_CONNECTED)) {
     webSocket.loop();
-  }
+    vTaskDelay (10);
 }
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
 
   switch (type) {
-    case WStype_DISCONNECTED:
-      Serial.printf("[%u] Disconnected!\n", num);
-      break;
     case WStype_CONNECTED:
       {
         IPAddress ip = webSocket.remoteIP(num);
         Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
-        webSocket.sendTXT(num, "Connected");
+        String InitSend = JsonInitSend();
+        webSocket.sendTXT(num, InitSend);
       }
       break;
     case WStype_TEXT:
@@ -66,14 +63,21 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 
 String JsonInitSend()
 {
-  StaticJsonDocument<200> Init;
+ DynamicJsonDocument JsonInit(200);
 
-  Init["microcontroller"] = "feeder";
-  Init["doublePortion"] = 1;
-  Init["feedingInterval"] = 10;
-  Init["feedingCount"] = "gps";
-  Init["maxFeedingCount"] = 10;
-  Init["lastFeedingTime"] = 14;
-  Init["type"] = "pf";
-  serializeJsonPretty(Init, Serial);
+JsonInit["event"] = "init";
+
+JsonObject data = JsonInit.createNestedObject("data");
+data["microcontroller"] = "feeder";
+data["doublePortion"] = 1;
+data["feedingInterval"] = 10;
+data["feedingCount"] = 4;
+data["maxFeedingCount"] = 10;
+data["lastFeedingTime"] = 14;
+data["type"] = "pf";
+
+serializeJsonPretty(JsonInit, Serial);
+  String output;
+  serializeJson(JsonInit,output);
+  return (output);
 }
