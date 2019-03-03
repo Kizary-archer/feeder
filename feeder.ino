@@ -3,10 +3,17 @@
 #include <EEPROM.h>
 #include <ArduinoJson.h>
 
+#define feedUpdated 0
+#define doublePortion 1
+#define feedingInterval 2
+#define feedingCount 3
+#define maxFeedingCount 4
+#define lastFeedingTime 5
+#define ServoAngle 6
+
 WebSocketsServer webSocket = WebSocketsServer(8080);
 
 void setup() {
-
   Serial.begin(115200);
 
   EEPROM.begin(20);
@@ -17,7 +24,7 @@ void setup() {
     delay(500);
     Serial.print(".");
   }
-  WifiInfo();
+  WifiInfo(); //IP,MASK,MAC
 
   webSocket.begin();
   webSocket.onEvent(webSocketEvent);
@@ -36,8 +43,8 @@ void WifiInfo() {
 }
 
 void loop() {
-    webSocket.loop();
-    vTaskDelay (10);
+  webSocket.loop();
+  vTaskDelay (10);
 }
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
@@ -53,7 +60,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       break;
     case WStype_TEXT:
       Serial.printf("[%u] get Text: %s\n", num, payload);
-
+      
       // send message to client
       // webSocket.sendTXT(num, "message here");
       break;
@@ -61,23 +68,32 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 
 }
 
+void JsonEvent(String event,byte dat){
+  
+    if (event == "startFeeding") 
+    else if (event == "feedUpdated") {ESPSerial.println(modeUpdate(oper_mode));reStart();}
+    else if (event == "doublePortion") ESPSerial.println(modeUpdate(analize_mode));
+    else if (event == "feedingInterval") resetFunc();
+
+}
+
 String JsonInitSend()
 {
- DynamicJsonDocument JsonInit(200);
+  DynamicJsonDocument JsonInit(200);
 
-JsonInit["event"] = "init";
+  JsonInit["event"] = "init";
 
-JsonObject data = JsonInit.createNestedObject("data");
-data["microcontroller"] = "feeder";
-data["doublePortion"] = 1;
-data["feedingInterval"] = 10;
-data["feedingCount"] = 4;
-data["maxFeedingCount"] = 10;
-data["lastFeedingTime"] = 14;
-data["type"] = "pf";
+  JsonObject data = JsonInit.createNestedObject("data");
+  data["microcontroller"] = "feeder";
+  data["doublePortion"] = 1;
+  data["feedingInterval"] = 10;
+  data["feedingCount"] = 4;
+  data["maxFeedingCount"] = 10;
+  data["lastFeedingTime"] = 14;
+  data["type"] = "pf";
 
-serializeJsonPretty(JsonInit, Serial);
+  serializeJsonPretty(JsonInit, Serial);
   String output;
-  serializeJson(JsonInit,output);
+  serializeJson(JsonInit, output);
   return (output);
 }
