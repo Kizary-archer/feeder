@@ -2,19 +2,25 @@
 #include <WebSocketsServer.h>
 #include <EEPROM.h>
 #include <ArduinoJson.h>
+#include <ESP32Servo.h>
 
+//EEPROM
 #define ServoAngle 0  //угол поворота сервопривода
 #define doublePortion 1 //двойная порция
 #define feedingInterval 2 //интервал кормления
 #define feedingCount 3 //используется для сброса значений при обновлении корма
 #define maxFeedingCount 4 //колл.порций
 #define lastFeedingTime 5 //последнее время кормления
+//Settings
+#define servoPin 18
+Servo servo;
 
 WebSocketsServer webSocket = WebSocketsServer(8080);
 
 void setup() {
   Serial.begin(115200);
-
+  servo.setPeriodHertz(50);      // Standard 50hz servo
+  servo.attach(servoPin, 500, 2400);
   EEPROM.begin(20);
   WiFi.begin("dlink9321", "19311933af");
   Serial.print("Connecting");  //  "Подключение"
@@ -67,7 +73,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       Serial.printf("[%u] get Text: %s\n", num, payload);
       DynamicJsonDocument JsonEvent(20);
       deserializeJson(JsonEvent, payload);
-      Serial.print(JsonEvent.as<char*>());
+      Serial.print(JsonEvent["event"].as<char*>());
+      String event = JsonEvent["event"];
+      bool dat =  JsonEvent["data"];
+      jsonEvent(event, dat);
 
       // send message to client
       // webSocket.sendTXT(num, "message here");
@@ -76,13 +85,13 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 
 }
 
-void JsonEvent(String event, byte dat) {
+void jsonEvent(String event, bool dat) {
 
-  if (event == "startFeeding") EEPROM.write(feedingCount, 7);
+  if (event == "startFeeding") {byte pos = 90+(EEPROM.read(doublePortion)*90);ServoMotor(pos);}
   else if (event == "feedUpdated") EEPROM.write(feedingCount, 0);
   else if (event == "doublePortion") EEPROM.write(doublePortion, dat);
   else if (event == "feedingInterval") Serial.println("установка интервала");
-
+  EEPROM.commit();
   // EEPROM.write(ServoAngle,90 + (EEPROM.read(doublePortion)*90))
 
 }
@@ -106,4 +115,8 @@ String JsonInitSend()
   String output;
   serializeJson(JsonInit, output);
   return (output);
+}
+void ServoMotor(byte pos) {
+  Serial.println(pos);
+  servo.write(pos);
 }
