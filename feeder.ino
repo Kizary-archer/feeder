@@ -3,13 +3,12 @@
 #include <EEPROM.h>
 #include <ArduinoJson.h>
 
-#define feedUpdated 0
-#define doublePortion 1
-#define feedingInterval 2
-#define feedingCount 3
-#define maxFeedingCount 4
-#define lastFeedingTime 5
-#define ServoAngle 6
+#define ServoAngle 0  //угол поворота сервопривода
+#define doublePortion 1 //двойная порция
+#define feedingInterval 2 //интервал кормления
+#define feedingCount 3 //используется для сброса значений при обновлении корма
+#define maxFeedingCount 4 //колл.порций
+#define lastFeedingTime 5 //последнее время кормления
 
 WebSocketsServer webSocket = WebSocketsServer(8080);
 
@@ -60,6 +59,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       break;
     case WStype_TEXT:
       Serial.printf("[%u] get Text: %s\n", num, payload);
+      DynamicJsonDocument JsonEvent(20);
+      deserializeJson(JsonEvent, payload);
+      Serial.print(JsonEvent.as<char*>());
       
       // send message to client
       // webSocket.sendTXT(num, "message here");
@@ -68,12 +70,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 
 }
 
-void JsonEvent(String event,byte dat){
-  
-    if (event == "startFeeding") 
-    else if (event == "feedUpdated") {ESPSerial.println(modeUpdate(oper_mode));reStart();}
-    else if (event == "doublePortion") ESPSerial.println(modeUpdate(analize_mode));
-    else if (event == "feedingInterval") resetFunc();
+void JsonEvent(String event, byte dat) {
+
+  if (event == "startFeeding") EEPROM.write(feedingCount, 7);
+  else if (event == "feedUpdated") EEPROM.write(feedingCount, 0);
+  else if (event == "doublePortion") EEPROM.write(doublePortion, dat);
+  else if (event == "feedingInterval") Serial.println("установка интервала");
+
+  // EEPROM.write(ServoAngle,90 + (EEPROM.read(doublePortion)*90))
 
 }
 
@@ -85,9 +89,9 @@ String JsonInitSend()
 
   JsonObject data = JsonInit.createNestedObject("data");
   data["microcontroller"] = "feeder";
-  data["doublePortion"] = 1;
+  data["doublePortion"] = EEPROM.read(doublePortion);
   data["feedingInterval"] = 10;
-  data["feedingCount"] = 4;
+  data["feedingCount"] = EEPROM.read(feedingCount);
   data["maxFeedingCount"] = 10;
   data["lastFeedingTime"] = 14;
   data["type"] = "pf";
