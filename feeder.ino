@@ -49,6 +49,12 @@ void loop() {
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
 
   switch (type) {
+    case WStype_ERROR:
+      Serial.printf("[%u] ERROR!\n", num);
+      break;
+    case WStype_DISCONNECTED:
+      Serial.printf("[%u] Disconnected!\n", num);
+      break;
     case WStype_CONNECTED:
       {
         IPAddress ip = webSocket.remoteIP(num);
@@ -62,7 +68,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       DynamicJsonDocument JsonEvent(20);
       deserializeJson(JsonEvent, payload);
       Serial.print(JsonEvent.as<char*>());
-      
+
       // send message to client
       // webSocket.sendTXT(num, "message here");
       break;
@@ -90,10 +96,10 @@ String JsonInitSend()
   JsonObject data = JsonInit.createNestedObject("data");
   data["microcontroller"] = "feeder";
   data["doublePortion"] = EEPROM.read(doublePortion);
-  data["feedingInterval"] = 10;
+  data["feedingInterval"] = 2;
   data["feedingCount"] = EEPROM.read(feedingCount);
-  data["maxFeedingCount"] = 10;
-  data["lastFeedingTime"] = 14;
+  data["maxFeedingCount"] = 20;
+  data["lastFeedingTime"] = 1551710602278;
   data["type"] = "pf";
 
   serializeJsonPretty(JsonInit, Serial);
