@@ -5,7 +5,6 @@
 #include <ESP32Servo.h>
 
 //EEPROM
-#define ServoAngle 0  //угол поворота сервопривода
 #define doublePortion 1 //двойная порция
 #define feedingInterval 2 //интервал кормления
 #define feedingCount 3 //используется для сброса значений при обновлении корма
@@ -75,7 +74,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       deserializeJson(JsonEvent, payload);
       Serial.print(JsonEvent["event"].as<char*>());
       String event = JsonEvent["event"];
-      bool dat =  JsonEvent["data"];
+      byte dat =  JsonEvent["data"];
       jsonEvent(event, dat);
 
       // send message to client
@@ -85,12 +84,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 
 }
 
-void jsonEvent(String event, bool dat) {
+void jsonEvent(String event, byte dat) {
 
   if (event == "startFeeding") ServoMotor();
   else if (event == "feedUpdated") EEPROM.write(feedingCount, 0);
   else if (event == "doublePortion") EEPROM.write(doublePortion, dat);
-  else if (event == "feedingInterval") Serial.println("установка интервала");
+  else if (event == "feedingInterval") EEPROM.write(feedingInterval, dat);
   EEPROM.commit();
 }
 
@@ -103,7 +102,7 @@ String JsonInitSend()
   JsonObject data = JsonInit.createNestedObject("data");
   data["microcontroller"] = "feeder";
   data["doublePortion"] = EEPROM.read(doublePortion);
-  data["feedingInterval"] = 2;
+  data["feedingInterval"] = EEPROM.read(feedingInterval);
   data["feedingCount"] = EEPROM.read(feedingCount);
   data["maxFeedingCount"] = 20;
   data["lastFeedingTime"] = 1551710602278;
@@ -114,7 +113,10 @@ String JsonInitSend()
   serializeJson(JsonInit, output);
   return (output);
 }
-void ServoMotor(byte pos) {
-  Serial.println(pos);
-  servo.write(pos);
+void ServoMotor() {
+  servo.write(90);
+  if (EEPROM.read(doublePortion))
+    delay(4000);
+  else delay(2000);
+  servo.write(0);
 }
