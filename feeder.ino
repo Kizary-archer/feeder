@@ -87,13 +87,11 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 
 void jsonEvent(String event, bool dat) {
 
-  if (event == "startFeeding") {byte pos = 90+(EEPROM.read(doublePortion)*90);ServoMotor(pos);}
+  if (event == "startFeeding") ServoMotor();
   else if (event == "feedUpdated") EEPROM.write(feedingCount, 0);
   else if (event == "doublePortion") EEPROM.write(doublePortion, dat);
   else if (event == "feedingInterval") Serial.println("установка интервала");
   EEPROM.commit();
-  // EEPROM.write(ServoAngle,90 + (EEPROM.read(doublePortion)*90))
-
 }
 
 String JsonInitSend()
